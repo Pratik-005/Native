@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import * as Yup from 'yup';
-import { Formik } from 'formik';
+import { FastField, Formik } from 'formik';
 import BouncyCheckbox from "react-native-bouncy-checkbox";
 import {
   SafeAreaView,
@@ -10,8 +10,13 @@ import {
   Text,
   TextInput,
   View,
-  TouchableOpacity
+  TouchableOpacity,
+  Keyboard,
+  Image,
+  useColorScheme
 } from 'react-native';
+
+import Clipboard from '@react-native-clipboard/clipboard';
 
 const PasswordScema = Yup.object().shape({
   passLength: Yup.number().
@@ -31,6 +36,10 @@ function App(): JSX.Element {
   const [lowercase, setLowercase] = useState(true);
   const [numbers, setNumbers] = useState(false);
   const [symbols, setSymbols] = useState(false);
+
+  const [copiedText, setCopiedText] = useState('');
+  const [copied,setCopied] = useState(false);
+
 
 
 
@@ -59,6 +68,7 @@ function App(): JSX.Element {
     console.log(passResult);
     setPassword(passResult);
     setIsPassGenerated(true);
+    Keyboard.dismiss();
 
   }
 
@@ -79,6 +89,7 @@ function App(): JSX.Element {
     setUppercase(false);
     setNumbers(false);
     setSymbols(false);
+    setCopied(false);
   }
 
 
@@ -104,78 +115,77 @@ function App(): JSX.Element {
               handleSubmit,
               handleReset
             }) => (<>
-              <View style={styles.inputWrapper} >
+              <View style={[styles.inputWrapper, styles.takeinput]} >
                 <View style={styles.inputColumn} >
                   <Text style={styles.heading} >
-                    Password Length
+                    Enter the Password Length
                   </Text>
-                  {
-                    touched.passLength && errors.passLength && (
-                      <Text style={styles.errorText} >
-                        {errors.passLength}
-                      </Text>
-                    )
-                  }
                 </View>
-                <TextInput style={styles.inputStyle} value={values.passLength} onChangeText={handleChange('passLength')} placeholder='Ex.8' keyboardType='numeric' />
+                <TextInput style={styles.inputStyle} value={values.passLength} onChangeText={handleChange('passLength')} placeholder='' keyboardType='numeric' />
+                {
+                  touched.passLength && errors.passLength && (
+                    <Text style={styles.errorText} >
+                      {errors.passLength}
+                    </Text>
+                  )
+                }
               </View>
 
               <View style={styles.inputWrapper} >
                 <Text style={styles.heading} >
                   Include Lowercase
                 </Text>
-                <BouncyCheckbox disableBuiltInState isChecked={lowercase} onPress={() => setLowercase(!lowercase)} fillColor="#29a87" />
+                <BouncyCheckbox disableBuiltInState isChecked={lowercase} onPress={() => setLowercase(!lowercase)} fillColor="green" />
               </View>
 
               <View style={styles.inputWrapper} >
                 <Text style={styles.heading} >
                   Include UpperCase
                 </Text>
-                <BouncyCheckbox disableBuiltInState isChecked={uppercase} onPress={() => setUppercase(!uppercase)} fillColor="#29a87" />
+                <BouncyCheckbox disableBuiltInState isChecked={uppercase} onPress={() => setUppercase(!uppercase)} fillColor="green"  />
               </View>
 
               <View style={styles.inputWrapper} >
                 <Text style={styles.heading} >
                   Include Digits
                 </Text>
-                <BouncyCheckbox disableBuiltInState isChecked={numbers} onPress={() => setNumbers(!numbers)} fillColor="#29a87" />
+                <BouncyCheckbox disableBuiltInState isChecked={numbers} onPress={() => setNumbers(!numbers)} fillColor="green" />
               </View>
 
               <View style={styles.inputWrapper} >
                 <Text style={styles.heading} >
                   Include Special Characters
                 </Text>
-                <BouncyCheckbox disableBuiltInState isChecked={symbols} onPress={() => setSymbols(!symbols)} fillColor="#29a87" />
+                <BouncyCheckbox disableBuiltInState isChecked={symbols} onPress={() => setSymbols(!symbols)} fillColor="green" />
               </View>
 
               <View style={styles.formActions} >
-                <TouchableOpacity disabled={!isValid} style={styles.primaryBtn} onPress={() => handleSubmit()}>                    
-                <Text style={styles.primaryBtnTxt} >
-                  Generate 
-                </Text>
+              <TouchableOpacity style={styles.secondaryBtn} onPress={() => { handleReset(); resetPassState(); }} >
+                  <Text style={styles.secondaryBtnTxt} >
+                    Reset
+                  </Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.secondaryBtn} onPress={()=>{handleReset();resetPassState();}} >
-                <Text style={styles.secondaryBtnTxt} >
-                  Reset 
-                </Text>
+                <TouchableOpacity disabled={!isValid} style={styles.primaryBtn} onPress={() => handleSubmit()}>
+                  <Text style={styles.primaryBtnTxt} >
+                    Generate
+                  </Text>
                 </TouchableOpacity>
+                
               </View>
             </>
             )}
           </Formik>
         </View>
-        { isPassGenerated ? (
-            <View style={[styles.card,styles.cardElevated]} >
-                <Text style={styles.subTitle} >
-                  Result :
-                </Text>
-                <Text style={styles.desc} >
-                  Long Press to Copy
-                </Text>
-                <Text selectable={true}  style={styles.generatedPass} >
-                  {password}
-                </Text>
-            </View>) : null}
+        {isPassGenerated ? (
+          <View style={[styles.card, styles.cardElevated]} >
+            <Text selectable={true} style={styles.generatedPass} >
+              {password}
+            </Text>
+            <TouchableOpacity onPress={()=>{ Clipboard.setString(password);
+              setCopied(!copied)}} >
+              <Image style={styles.clipboard}  source={ copied ?  require("./assets/copied.png") : require("./assets/copy.png") } />  
+            </TouchableOpacity>
+          </View>) : null}
 
       </SafeAreaView>
 
@@ -195,90 +205,114 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     fontWeight: "600",
-    marginBottom: 40,
-    textAlign: "center"
+    marginBottom: 60,
+    textAlign: "center",
+    borderBottomColor:"#666b77",
+    paddingBottom:15,
+    borderBottomWidth:0.8,
   },
   inputWrapper: {
     marginBottom: 15,
     alignItems: "center",
     justifyContent: "space-between",
-    flexDirection: "row"
+    flexDirection: "row",
+  },
+  takeinput: {
+    flexDirection: "column",
+    alignItems:"flex-start",
+    marginBottom:30
   },
   inputColumn: {
     flexDirection: "column",
 
-  }, heading: {
+  },
+  heading: {
     fontSize: 15
   }, errorText: {
-      fontSize:12,
-      color:"#ff0d10"
+    fontSize: 12,
+    color: "#ff0d10"
   },
   inputStyle: {
-    width: "30%",
+    width:"100%",
     padding: 8,
     borderWidth: 1,
     borderRadius: 4,
-    borderColor: "#162132"
+    borderColor: "#d9dce1",
+    marginVertical:10
   },
   formActions: {
-    flexDirection:"row",
-    justifyContent:"center"
-  },
-  primaryBtn: {
-    width:120,
-    padding:10,
-    borderRadius:8,
-    marginHorizontal:8,
-    backgroundColor:"#5da3fa"
-  },
-  primaryBtnTxt: {
-    color:"#fff",
-    textAlign:"center",
-    fontWeight:"700"
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginVertical:40
 
   },
-  secondaryBtn:{
-    width:120,
-    padding:10,
-    borderRadius:8,
-    marginHorizontal:8,
-    backgroundColor:"#5da3fa"
+  primaryBtn: {
+    width: 120,
+    padding: 10,
+    borderRadius: 8,
+    marginHorizontal: 8,
+    backgroundColor: "#5da3fa"
   },
-  secondaryBtnTxt:{
-    color:"#fff",
-    textAlign:"center",
-    fontWeight:"700"
+  primaryBtnTxt: {
+    color: "#fff",
+    textAlign: "center",
+    fontWeight: "700"
+
   },
-  card:{
-    padding:12,
-    borderRadius:6,
-    marginHorizontal:12
+  secondaryBtn: {
+    width: 120,
+    padding: 10,
+    borderRadius: 8,
+    marginHorizontal: 8,
+    backgroundColor: "#5da3fa"
   },
-  cardElevated:{
-    backgroundColor:"white",
-    elevation:1,
-    shadowOffset:{
-      height:1,
-      width:1
+  secondaryBtnTxt: {
+    color: "#fff",
+    textAlign: "center",
+    fontWeight: "700"
+  },
+  card: {
+    padding:4,
+    paddingTop:14,
+    width:"85%",
+    borderRadius: 6,
+    marginHorizontal: 12,
+    flex:1,
+    flexDirection:"row",
+    justifyContent:"space-evenly",
+    alignSelf:"center",
+  },
+  cardElevated: {
+    backgroundColor: "#fff",
+    elevation: 1,
+    shadowOffset: {
+      height: 1.2,
+      width: 1.2
     },
-    shadowColor:"#333",
-    shadowOpacity:0.2,
-    shadowRadius:2
+    shadowColor: "#333",
+    shadowOpacity: 0.5,
+    shadowRadius: 5
   },
-  generatedPass:{
-    fontSize:22,
-    textAlign:"center",
-    marginBottom:12,
-    color:"#000"
+  generatedPass: {
+    fontSize: 22,
+    textAlign: "center",
+    marginBottom: 12,
+    color: "#000"
   },
-  subTitle:{
-    fontSize:26,
-    fontWeight:"600",
-    marginBottom:2
+  subTitle: {
+    fontSize: 26,
+    fontWeight: "600",
+    marginBottom: 2
   },
-  desc:{
-    color:"#758283",
-    marginBottom:8
+  desc: {
+    color: "#758283",
+    marginBottom: 8
+  },
+  clipboard:{
+    width:25,
+    height:25,
+    marginHorizontal:15,
+    marginTop:3
   }
 });
 
